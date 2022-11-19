@@ -26,10 +26,13 @@ FROM scratch as final
 ARG ARCH=amd64
 ARG VERSION=amd64
 
-LABEL sentinel.vendor="Sentinel Developers"
-LABEL sentinel.name="Sentinel OS"
-LABEL sentinel.arch="${ARCH}"
-LABEL sentinel.version="${VERSION}"
+LABEL org.opencontainers.image.authors="Sentinel Developers"
+LABEL org.opencontainers.image.title="Sentinel OS"
+LABEL org.opencontainers.image.description="Sentinel OS Base Image"
+LABEL org.opencontainers.image.arch="${ARCH}"
+LABEL org.opencontainers.image.version="${VERSION}"
+LABEL org.opencontainers.image.source="https://github.com/sentinelos/base"
+LABEL org.opencontainers.image.licenses="MIT"
 
 ENV PS1="\@ \u@\h \w$ "
 ENV EDITOR="nano"
