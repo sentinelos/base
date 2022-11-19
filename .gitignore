@@ -8,10 +8,6 @@
 *.xz
 *.part
 *.tar
-src
-pkg
-pkg-*
-build.log
-core
-!core/
+*.log
+.idea/
 .vscode/
