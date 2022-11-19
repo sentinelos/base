@@ -23,13 +23,12 @@ build_all()
         echo "Building image ${IMAGE_NAME_VERSION} for arch ${ARCH} version ${VERSION}"
 
         podman build --build-arg ARCH="${ARCH}" --build-arg VERSION="${VERSION}" -f "$(pwd)/Containerfile" -t "${IMAGE_NAME_VERSION}" .
-        podman tag "${IMAGE_NAME_VERSION}" "${IMAGE_NAME_LATEST}"
 
         if [ -n "$(echo "${VERSION}" | grep "dirty")" ]; then
             echo "Skipping built image ${IMAGE_NAME_VERSION} push"
         else
-            podman push "${IMAGE_NAME_VERSION}"
-            podman push "${IMAGE_NAME_LATEST}"
+            podman tag "${IMAGE_NAME_VERSION}" "${IMAGE_NAME_LATEST}"
+            podman push "${IMAGE_NAME_VERSION}" && podman push "${IMAGE_NAME_LATEST}"
         fi
 
         cd ..
