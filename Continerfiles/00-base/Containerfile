@@ -1,0 +1,41 @@
+FROM alpine as installer
+
+RUN apk update && apk --no-cache add \
+    bash \
+    bash-completion \
+    bind-tools \
+    ca-certificates \
+    curl \
+    git \
+    gzip \
+    htop \
+    jq \
+    libc6-compat \
+    micro \
+    nano \
+    openssh-client \
+    sudo \
+    tar \
+    tree \
+    tzdata
+
+COPY overlay /
+
+FROM scratch as final
+
+ARG ARCH=amd64
+ARG VERSION=amd64
+
+LABEL sentinel.vendor="Sentinel Developers"
+LABEL sentinel.name="Sentinel OS"
+LABEL sentinel.arch="${ARCH}"
+LABEL sentinel.version="${VERSION}"
+
+ENV PS1="\@ \u@\h \w$ "
+ENV EDITOR="nano"
+
+WORKDIR /app
+
+COPY --from=installer /  /
+
+CMD ["bash"]

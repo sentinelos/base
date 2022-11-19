@@ -1,0 +1,6 @@
+NAME="Sentinel OS"
+ID=sentinelos
+VERSION_ID=0.0.1
+PRETTY_NAME="Sentinel OS v0.0.1"
+HOME_URL="https://sentinelos.com"
+BUG_REPORT_URL="https://github.com/sentinelos"

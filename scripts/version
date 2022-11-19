@@ -1,0 +1,17 @@
+#!/bin/bash
+
+ARCH="amd64"
+REPO="ghcr.io/sentinelos/base"
+
+GIT_COMMIT=$(git rev-parse --short HEAD)
+GIT_TAG=$(git tag -l --contains HEAD | head -n 1)
+
+if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
+    DIRTY="-dirty"
+fi
+
+if [[ -z "${DIRTY}" && -n "${GIT_TAG}" ]]; then
+    VERSION="${GIT_TAG}"
+else
+    VERSION="${GIT_COMMIT}${DIRTY}"
+fi

@@ -1,0 +1,61 @@
+#!/bin/bash
+set -e
+
+build_all()
+{
+    if [ "$#" = 0 ]; then
+        set -- [0-9][0-9]*
+    fi
+
+    for i; do
+        i="$(basename "$i")"
+        IMAGE=${i##[0-9][0-9]-}
+        FULL_IMAGE="$REPO/$IMAGE:$VERSION"
+
+        cd "$i"
+        if [ -e archs ] && ! grep -w -q "${ARCH}" archs; then
+            echo "skipping ${FULL_IMAGE} for ${ARCH}"
+            cd ..
+            continue
+        fi
+
+        echo "building ${FULL_IMAGE} image"
+        podman build --build-arg ARCH="${ARCH}" --build-arg VERSION="${VERSION}" -f "$(pwd)/Containerfile" -t "${FULL_IMAGE}" .
+
+        cd ..
+    done
+}
+
+copy_all()
+{
+    OUTPUT="$1"
+    shift
+
+    if [ "$#" = 0 ]; then
+        set -- [0-9][0-9]*
+    fi
+
+    for i; do
+        i="$(basename "$i")"
+        IMAGE=${i##[0-9][0-9]-}
+        FULL_IMAGE="$REPO/$IMAGE:$VERSION"
+
+        cd "$i"
+        if [ -e archs ] && ! grep -w -q "${ARCH}" archs; then
+            echo "skipping ${FULL_IMAGE} for ${ARCH}"
+            cd ..
+            continue
+        fi
+
+        echo "building ${FULL_IMAGE} image"
+        ID=$(podman create "${FULL_IMAGE}")
+        readlink -f "${OUTPUT}"
+
+        rm -rf output
+        podman cp "${ID}:/output" .
+        podman rm -fv "${ID}"
+        cp ./output/* "${OUTPUT}/"
+        rm -rf ./output
+        cd ..
+    done
+}
