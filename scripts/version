@@ -3,7 +3,6 @@
 ARCH="amd64"
 REGISTRY="ghcr.io"
 USERNAME="sentinelos"
-REGISTRY_AND_USERNAME="${REGISTRY}/${USERNAME}"
 
 GIT_COMMIT=$(git describe --match=none --always --abbrev=8 --dirty)
 GIT_TAG=$(git tag -l --contains HEAD)
