@@ -15,7 +15,7 @@ build_all()
 
         cd "$i"
         if [ -e archs ] && ! grep -w -q "${ARCH}" archs; then
-            echo "Skipping building image ${IMAGE_NAME_VERSION} for arch ${ARCH}"
+            echo "Skipping building image ${IMAGE_NAME_VERSION} for arch ${ARCH}, not supported arch"
             cd ..
             continue
         fi
@@ -25,8 +25,13 @@ build_all()
         podman build --build-arg ARCH="${ARCH}" --build-arg VERSION="${VERSION}" -f "$(pwd)/Containerfile" -t "${IMAGE_NAME_VERSION}" .
         podman tag "${IMAGE_NAME_VERSION}" "${IMAGE_NAME_LATEST}"
 
-        podman push "${IMAGE_NAME_VERSION}"
-        podman push "${IMAGE_NAME_LATEST}"
+        if [ -n "$(echo "${VERSION}" | grep "dirty")" ]; then
+            echo "Skipping built image ${IMAGE_NAME_VERSION} push"
+        else
+            podman push "${IMAGE_NAME_VERSION}"
+            podman push "${IMAGE_NAME_LATEST}"
+        fi
+
         cd ..
     done
 }
@@ -47,7 +52,7 @@ copy_all()
 
         cd "$i"
         if [ -e archs ] && ! grep -w -q "${ARCH}" archs; then
-            echo "Skipping building image ${IMAGE_NAME_VERSION} for arch ${ARCH}"
+            echo "Skipping building image ${IMAGE_NAME_VERSION} for arch ${ARCH}, not supported arch"
             cd ..
             continue
         fi

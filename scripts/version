@@ -5,7 +5,7 @@ REGISTRY="ghcr.io"
 USERNAME="sentinelos"
 
 GIT_COMMIT=$(git describe --match=none --always --abbrev=8 --dirty)
-GIT_TAG=$(git tag -l --contains HEAD)
+GIT_TAG=$(git tag -l | tail -n 1)
 
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     VERSION="${GIT_COMMIT}"
