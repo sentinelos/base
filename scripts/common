@@ -1,34 +1,42 @@
 #!/usr/bin/env bash
 set -e
 
+# shell output
+display() { echo -e "\n--> $1..."; }
+indent() { sed "s/^/  /"; }
+warn() { echo -ne "  $*\n" >&2; }
+abort() { warn "\n\t\033[1;31m$*\033[0m\n"; exit 1; }
+
 build_all()
 {
     if [ "$#" = 0 ]; then
         set -- [0-9][0-9]*
     fi
 
-    for i; do
-        i="$(basename "$i")"
-        IMAGE=${i##[0-9][0-9]-}
+    for dir; do
+        dir="$(basename "$dir")"
+        IMAGE=${dir##[0-9][0-9]-}
         IMAGE_NAME_VERSION="${REGISTRY}/${USERNAME}/${IMAGE}:${VERSION}"
         IMAGE_NAME_LATEST="${REGISTRY}/${USERNAME}/${IMAGE}:latest"
 
-        cd "$i"
+        cd "$dir"
         if [ -e archs ] && ! grep -w -q "${ARCH}" archs; then
-            echo "Skipping building image ${IMAGE_NAME_VERSION} for arch ${ARCH}, not supported arch"
+            warn "Skipping building image ${IMAGE_NAME_VERSION} for arch ${ARCH}, not supported arch"
             cd ..
             continue
         fi
 
-        echo "Building image ${IMAGE_NAME_VERSION} for arch ${ARCH} version ${VERSION}"
-
-        podman build --build-arg ARCH="${ARCH}" --build-arg VERSION="${VERSION}" -f "$(pwd)/Containerfile" -t "${IMAGE_NAME_VERSION}" .
+        display "Building image ${IMAGE_NAME_VERSION} for arch ${ARCH} version ${VERSION}"
+        podman build --build-arg ARCH="${ARCH}" --build-arg VERSION="${VERSION}" -f "$(pwd)/Containerfile" --format oci --platform "linux/${ARCH}" -t "${IMAGE_NAME_VERSION}" . 2>&1 | indent
 
         if [ -n "$(echo "${VERSION}" | grep "dirty")" ]; then
-            echo "Skipping built image ${IMAGE_NAME_VERSION} push"
+            warn "Skipping built image ${IMAGE_NAME_VERSION} push"
         else
-            podman tag "${IMAGE_NAME_VERSION}" "${IMAGE_NAME_LATEST}"
-            podman push "${IMAGE_NAME_VERSION}" && podman push "${IMAGE_NAME_LATEST}"
+            podman push "${IMAGE_NAME_VERSION}" 2>&1 | indent
+            if [ "${GIT_TAG}" == "${GIT_TAG_LATEST}" ]; then
+                podman tag "${IMAGE_NAME_VERSION}" "${IMAGE_NAME_LATEST}" 2>&1 | indent
+                podman push "${IMAGE_NAME_LATEST}" 2>&1 | indent
+            fi
         fi
 
         cd ..
@@ -44,25 +52,25 @@ copy_all()
         set -- [0-9][0-9]*
     fi
 
-    for i; do
-        i="$(basename "$i")"
-        IMAGE=${i##[0-9][0-9]-}
+    for dir; do
+        dir="$(basename "$dir")"
+        IMAGE=${dir##[0-9][0-9]-}
         IMAGE_NAME_VERSION="${REGISTRY}/${USERNAME}/${IMAGE}:${VERSION}"
 
-        cd "$i"
+        cd "$dir"
         if [ -e archs ] && ! grep -w -q "${ARCH}" archs; then
-            echo "Skipping building image ${IMAGE_NAME_VERSION} for arch ${ARCH}, not supported arch"
+            warn "Skipping building image ${IMAGE_NAME_VERSION} for arch ${ARCH}, not supported arch"
             cd ..
             continue
         fi
 
-        echo "Building image ${IMAGE_NAME_VERSION} for arch ${ARCH} version ${VERSION}"
+        display "Building image ${IMAGE_NAME_VERSION} for arch ${ARCH} version ${VERSION}"
         ID=$(podman create "${IMAGE_NAME_VERSION}")
         readlink -f "${OUTPUT}"
 
         rm -rf output
-        podman cp "${ID}:/output" .
-        podman rm -fv "${ID}"
+        podman cp "${ID}:/output" . 2>&1 | indent
+        podman rm -fv "${ID}" 2>&1 | indent
         cp ./output/* "${OUTPUT}/"
         rm -rf ./output
         cd ..

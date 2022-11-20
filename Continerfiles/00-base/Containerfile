@@ -1,20 +1,21 @@
-FROM alpine:3.16 as installer
+FROM alpine:3.17 as installer
 
 ARG USER=sentinelos
 ARG USER_ID=1001
 ARG GROUP=sentinelos
 ARG GROUP_ID=1001
 ARG WORKDIR=/app
+ARG ARCH=amd64
 ARG VERSION=
 
 # Install packages
 RUN apk update && apk add --no-cache \
-    --repository https://dl-cdn.alpinelinux.org/alpine/3.16/main \
-    --repository https://dl-cdn.alpinelinux.org/alpine/3.16/community \
     bash \
     bash-completion \
     bind-tools \
+    bzip2 \
     ca-certificates \
+    coreutils \
     curl \
     git \
     gzip \
@@ -45,6 +46,7 @@ RUN addgroup -g $GROUP_ID -S $GROUP \
 
 COPY overlay /
 
+# Prune
 RUN sed -i "s/{{VERSION}}/${VERSION}/" /etc/os-release \
     && rm -rf \
     /var/cache/apk/*
@@ -56,12 +58,10 @@ ARG VERSION=
 ARG WORKDIR=/app
 
 LABEL org.opencontainers.image.authors="Sentinel OS Authors"
-LABEL org.opencontainers.image.title="Sentinel OS"
 LABEL org.opencontainers.image.description="Sentinel OS Base Image"
-LABEL org.opencontainers.image.arch="${ARCH}"
-LABEL org.opencontainers.image.version="${VERSION}"
-LABEL org.opencontainers.image.source="https://github.com/sentinelos/base"
 LABEL org.opencontainers.image.licenses="MPL-2.0"
+LABEL org.opencontainers.image.source="https://github.com/sentinelos/base"
+LABEL org.opencontainers.image.title="Sentinel OS"
 
 ENV PS1="\@ \u@\h \w$ "
 ENV EDITOR="nano"

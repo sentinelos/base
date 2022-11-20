@@ -1,0 +1,17 @@
+FROM ghcr.io/sentinelos/base:latest
+
+ARG ARCH=amd64
+ARG VERSION=
+
+# Install packages
+RUN apk update && apk add --no-cache \
+    build-base \
+    gnupg \
+    musl-dev \
+    linux-headers
+
+# Prune
+RUN rm -rf \
+    /var/cache/apk/*
+
+LABEL org.opencontainers.image.description="Sentinel OS Build Base Image"

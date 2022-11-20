@@ -1,0 +1,16 @@
+FROM ghcr.io/sentinelos/build-base:latest
+
+ARG ARCH=amd64
+ARG VERSION=
+
+ENV PATH /usr/local/go/bin:$PATH
+ENV GOLANG_VERSION ${VERSION}
+ENV GOPATH /go
+ENV PATH $GOPATH/bin:$PATH
+
+RUN set -eux; \
+    mkdir -p "$GOPATH/src" "$GOPATH/bin" && chmod -R 777 "$GOPATH" && cd "$GOPATH/src"; \
+    wget -O go.tgz.asc "https://dl.google.com/go/go${VERSION}.src.tar.gz.asc"; \
+    wget -O go.tgz "https://dl.google.com/go/go{VERSION}.src.tar.gz"; \
+    echo "$sha256 *go.tgz" | sha256sum -c -;
+
