@@ -1,55 +1,52 @@
-FROM alpine:3.17 as installer
+FROM alpine:3.16 as installer
 
-ARG USER=sentinelos
-ARG USER_ID=1001
+ARG ARCH=amd64
 ARG GROUP=sentinelos
 ARG GROUP_ID=1001
-ARG WORKDIR=/app
-ARG ARCH=amd64
+ARG USER=sentinelos
+ARG USER_ID=1001
 ARG VERSION=
+ARG WORKDIR=/app
 
-# Install packages
-RUN apk update && apk add --no-cache \
-    bash \
-    bash-completion \
-    bind-tools \
-    bzip2 \
-    ca-certificates \
-    coreutils \
-    curl \
-    git \
-    gzip \
-    htop \
-    jq \
-    libc6-compat \
-    micro \
-    nano \
-    openssh-client \
-    sudo \
-    tar \
-    tree \
-    tzdata
-
-# Create a group and user
-RUN addgroup -g $GROUP_ID -S $GROUP \
-	&& adduser \
-	--disabled-password \
-	-g $GROUP_ID \
-	-D \
-    -S \
-	-s "/bin/bash" \
-	-h "/home/$USER" \
-	-u $USER_ID \
-	-G $GROUP $USER \
-	&& mkdir -p $WORKDIR \
-	&& chown -R $USER:$GROUP $WORKDIR
+RUN set -eux; \
+    apk update; \
+    apk add --no-cache \
+        bash \
+        bash-completion \
+        bind-tools \
+        bzip2 \
+        ca-certificates \
+        coreutils \
+        curl \
+        git \
+        gzip \
+        htop \
+        jq \
+        micro \
+        nano \
+        openssh-client \
+        sudo \
+        tar \
+        tree \
+        tzdata; \
+    addgroup -g "${GROUP_ID}" -S "${GROUP}"; \
+	adduser \
+	    --disabled-password \
+	    -g "${GROUP_ID}" \
+	    -D \
+        -S \
+	    -s "/bin/bash" \
+	    -h "/home/$USER" \
+	    -u "${USER_ID}" \
+	    -G "${GROUP}" "${USER}"; \
+	mkdir -p "${WORKDIR}"; \
+	chown -R "${USER}:${GROUP}" "${WORKDIR}"
 
 COPY overlay /
 
-# Prune
-RUN sed -i "s/{{VERSION}}/${VERSION}/" /etc/os-release \
-    && rm -rf \
-    /var/cache/apk/*
+RUN sed -i "s/{{VERSION}}/${VERSION}/" /etc/os-release; \
+    rm -rf \
+        /var/cache/apk/*
 
 FROM scratch as final
 
@@ -57,17 +54,16 @@ ARG ARCH=amd64
 ARG VERSION=
 ARG WORKDIR=/app
 
+ENV PS1="\@ \u@\h \w$ "
+ENV EDITOR="nano"
+
 LABEL org.opencontainers.image.authors="Sentinel OS Authors"
 LABEL org.opencontainers.image.description="Sentinel OS Base Image"
 LABEL org.opencontainers.image.licenses="MPL-2.0"
 LABEL org.opencontainers.image.source="https://github.com/sentinelos/base"
 LABEL org.opencontainers.image.title="Sentinel OS"
 
-ENV PS1="\@ \u@\h \w$ "
-ENV EDITOR="nano"
-
-WORKDIR $WORKDIR
-
 COPY --from=installer /  /
 
+WORKDIR "${WORKDIR}"
 CMD ["bash"]

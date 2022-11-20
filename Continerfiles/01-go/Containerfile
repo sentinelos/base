@@ -1,0 +1,41 @@
+FROM ghcr.io/sentinelos/base:latest
+
+ARG ARCH=amd64
+ARG GROUP=sentinelos
+ARG USER=sentinelos
+ARG VERSION=
+
+ENV GOPATH /go
+ENV GOROOT /usr/local/go
+ENV PATH /usr/local/go/bin:$GOPATH/bin:$PATH
+
+LABEL org.opencontainers.image.description="Sentinel OS Go Language Image"
+
+RUN set -eux; \
+    apk update; \
+    apk add --no-cache --virtual .build-deps go; \
+    apk add --no-cache make; \
+    mkdir -p "${GOPATH}/bin" "${GOPATH}/pkg" "${GOPATH}/src"; \
+    chown -R "${USER}:${GROUP}" "${GOPATH}"; \
+    curl -o go.tgz.asc "https://dl.google.com/go/go${VERSION}.src.tar.gz.asc"; \
+    curl -o go.tgz "https://dl.google.com/go/go${VERSION}.src.tar.gz"; \
+    tar -C /usr/local -xzf go.tgz; \
+    rm go.tgz.asc go.tgz; \
+    export GOCACHE='/tmp/gocache'; \
+    export GOAMD64="v1" GOARCH="${ARCH}" GOOS="linux"; \
+    export GOROOT_BOOTSTRAP="/usr/lib/go"; \
+    cd /usr/local/go/src; \
+    ./make.bash; \
+    apk del --no-network .build-deps; \
+    rm -rf \
+        /var/cache/apk/* \
+        /usr/local/go/pkg/*/cmd \
+    	/usr/local/go/pkg/bootstrap \
+    	/usr/local/go/pkg/obj \
+    	/usr/local/go/pkg/tool/*/api \
+    	/usr/local/go/pkg/tool/*/go_bootstrap \
+    	/usr/local/go/src/cmd/dist/dist \
+    	"${GOCACHE}"; \
+    echo "Built $(go version)"
+
+USER "${USER}"

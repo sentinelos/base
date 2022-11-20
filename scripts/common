@@ -5,10 +5,33 @@ set -e
 display() { echo -e "\n--> $1..."; }
 indent() { sed "s/^/  /"; }
 warn() { echo -ne "  $*\n" >&2; }
-abort() { warn "\n\t\033[1;31m$*\033[0m\n"; exit 1; }
+abort() {
+    warn "\n\t\033[1;31m$*\033[0m\n"
+    exit 1
+}
 
-build_all()
-{
+build_image() {
+    display "Building image $3 for $1 v$2"
+    podman build --build-arg ARCH="$1" --build-arg VERSION="$2" -f "Containerfile" --format oci --platform "linux/$1" -t "$3" . 2>&1 | indent
+}
+
+push_image() {
+    if [ -n "$(echo "$1" | grep "dirty")" ]; then
+        warn "Skipping push built image $1"
+    else
+        display "Push image $1"
+        echo "${CR_PAT}" | podman login ghcr.io -u "${USERNAME}" --password-stdin 2>&1 | indent
+        podman push "$1" 2>&1 | indent
+    fi
+}
+
+pull_image() {
+    display "Pull image $1"
+    echo "${CR_PAT}" | podman login ghcr.io -u "${USERNAME}" --password-stdin 2>&1 | indent
+    podman pull "$1" 2>&1 | indent
+}
+
+build_all() {
     if [ "$#" = 0 ]; then
         set -- [0-9][0-9]*
     fi
@@ -21,21 +44,25 @@ build_all()
 
         cd "$dir"
         if [ -e archs ] && ! grep -w -q "${ARCH}" archs; then
-            warn "Skipping building image ${IMAGE_NAME_VERSION} for arch ${ARCH}, not supported arch"
+            warn "Skipping building image ${IMAGE_NAME_VERSION} for ${ARCH} not supported"
             cd ..
             continue
         fi
 
-        display "Building image ${IMAGE_NAME_VERSION} for arch ${ARCH} version ${VERSION}"
-        podman build --build-arg ARCH="${ARCH}" --build-arg VERSION="${VERSION}" -f "$(pwd)/Containerfile" --format oci --platform "linux/${ARCH}" -t "${IMAGE_NAME_VERSION}" . 2>&1 | indent
+        if [ -e versions ]; then
+            while IFS= read -r version; do
+                IMAGE_NAME_VERSION="${REGISTRY}/${USERNAME}/${IMAGE}:${version}"
 
-        if [ -n "$(echo "${VERSION}" | grep "dirty")" ]; then
-            warn "Skipping built image ${IMAGE_NAME_VERSION} push"
+                build_image "${ARCH}" "${version}" "${IMAGE_NAME_VERSION}"
+                push_image "${IMAGE_NAME_VERSION}"
+            done <"versions"
         else
-            podman push "${IMAGE_NAME_VERSION}" 2>&1 | indent
+            build_image "${ARCH}" "${VERSION}" "${IMAGE_NAME_VERSION}"
+            push_image "${IMAGE_NAME_VERSION}"
+
             if [ "${GIT_TAG}" == "${GIT_TAG_LATEST}" ]; then
                 podman tag "${IMAGE_NAME_VERSION}" "${IMAGE_NAME_LATEST}" 2>&1 | indent
-                podman push "${IMAGE_NAME_LATEST}" 2>&1 | indent
+                push_image "${IMAGE_NAME_LATEST}"
             fi
         fi
 
@@ -43,8 +70,7 @@ build_all()
     done
 }
 
-copy_all()
-{
+copy_all() {
     OUTPUT="$1"
     shift
 
@@ -59,12 +85,12 @@ copy_all()
 
         cd "$dir"
         if [ -e archs ] && ! grep -w -q "${ARCH}" archs; then
-            warn "Skipping building image ${IMAGE_NAME_VERSION} for arch ${ARCH}, not supported arch"
+            warn "Skipping building image ${IMAGE_NAME_VERSION} for ${ARCH} not supported"
             cd ..
             continue
         fi
 
-        display "Building image ${IMAGE_NAME_VERSION} for arch ${ARCH} version ${VERSION}"
+        display "Building image ${IMAGE_NAME_VERSION} for ${ARCH} v${VERSION}"
         ID=$(podman create "${IMAGE_NAME_VERSION}")
         readlink -f "${OUTPUT}"
 
