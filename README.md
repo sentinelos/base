@@ -1,6 +1,6 @@
 # Sentinel OS base
 
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/sentinelos/pkgs)](https://github.com/sentinelos/base/releases)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/sentinelos/base)](https://github.com/sentinelos/base/releases)
 
 ## Getting Started
 
